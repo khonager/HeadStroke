@@ -163,7 +163,7 @@ export class Studio {
     try { await this.persist(true); } catch(e) { this.drawing.load(draft); throw e; }
     this.message = 'New canvas · previous marks kept in Saved drawings'; this.notify();
   }
-  view(artwork: Artwork) { this.drawing.setPaused(true); this.viewing = artwork; this.menuIndex = -1; this.message = ''; this.notify(); }
+  view(artwork: Artwork) { this.drawing.setPaused(true); this.viewing = artwork; this.galleryIndex = this.artworks.findIndex(a => a.id === artwork.id); this.menuIndex = -1; this.message = ''; this.notify(); }
   closeView() { this.viewing = undefined; this.galleryIndex = -1; this.drawing.breakStroke(); this.notify(); }
   async deleteDrawing(id: string) {
     const previous = this.artworks; this.artworks = previous.filter(a => a.id !== id);
