@@ -106,9 +106,11 @@ export class Studio {
     this.calibrationStep = 0; this.captures = []; this.message = ''; this.notify();
   }
   get calibrationPrompt() {
-    return ['Look straight ahead. Hold still, then tap.',
-      'Turn or tilt comfortably right. Hold, then tap.',
-      'Return to center, look up. Hold, then tap.'][this.calibrationStep] ?? '';
+    return [
+      'Face straight ahead in your normal drawing posture. Hold still for a moment, then tap.',
+      'Keep facing forward. Tilt your right ear toward your right shoulder (do not turn to look right). Hold the tilt, then tap.',
+      'Return fully to the first position. Now lift your chin to look up, without tilting sideways. Hold, then tap.',
+    ][this.calibrationStep] ?? '';
   }
   get calibrationSensorStatus() {
     if (!this.lastSample || !this.latest) return 'No head-tracking samples yet.';
@@ -116,8 +118,9 @@ export class Studio {
     const delta = this.captures[0]
       ? Math.hypot(...this.latest.map((value, i) => value - this.captures[0][i]))
       : undefined;
+    const baseline = this.captures[0] && Math.hypot(...this.captures[0]);
     return `Sensor: ${this.samples.length} new sample${this.samples.length === 1 ? '' : 's'} · last ${age.toFixed(1)}s ago` +
-      (delta === undefined ? '' : ` · movement ${delta.toFixed(3)}`);
+      (delta === undefined ? '' : ` · movement ${baseline ? `${Math.round(delta / baseline * 100)}%` : delta.toFixed(3)}`);
   }
   captureCalibration() {
     // The bridge may deliver IMU reports sparsely. One recent reading is enough
@@ -131,14 +134,18 @@ export class Studio {
     const noise = Math.max(...recent.map(s => Math.hypot(...s.v.map((v,i) => v - mean[i]))));
     if (this.calibrationStep > 0) {
       const delta = Math.hypot(...mean.map((v,i) => v - this.captures[0][i]));
-      if (delta < Math.max(1e-4,noise * 5)) throw new Error('Movement is too small or not steady. Hold a clear tilt, then tap again.');
+      const baseline = Math.hypot(...this.captures[0]);
+      if (delta < Math.max(baseline * .08, noise * 2, 1e-4))
+        throw new Error(this.calibrationStep === 1
+          ? 'Tilt your right ear farther toward your shoulder, hold still, then tap again.'
+          : 'Return to center, then lift your chin farther upward. Hold still and tap again.');
     }
     this.captures[this.calibrationStep] = mean;
     if (this.calibrationStep === 2) {
-      try { this.motion.calibration = calibrationFrom(this.captures[0],this.captures[1],mean); }
-      catch(e) { this.calibrationStep = 0; this.captures = []; throw e; }
+      try { this.motion.calibration = calibrationFrom(this.captures[0],this.captures[1],mean,.35); }
+      catch { throw new Error('The up movement was too similar to the right tilt. Return to center, look up without tilting, and retry position 3.'); }
       this.motion.recenter(this.captures[0]); this.calibrationStep = -1;
-      this.message = 'Ready · face forward and tap to draw';
+      this.message = 'Ready. Face forward and swipe up to center.';
       void this.persist(true).catch(e => this.fail(e));
     } else this.calibrationStep = (this.calibrationStep + 1) as 1 | 2;
     this.samples = []; this.notify();
@@ -237,13 +244,14 @@ export class Studio {
     if (index === 7) { await this.persist(true); await this.glasses?.exit(); }
   }
   frame(): Frame {
-    let text = this.drawing.paused ? 'Paused · tap to draw' : 'Drawing · tap to pause';
-    text += '\nSwipe down: menu · swipe up: recenter\nDouble tap: exit';
+    let text = this.drawing.paused ? 'Paused · move to check cursor\nSwipe up: center · tap: draw' : ' ';
     if (!this.ready) text = 'Open HeadStroke in the Even app.\nLoading sketchbook...';
-    if (this.calibrationStep >= 0) text = `Calibrate ${this.calibrationStep + 1}/3\n${this.calibrationPrompt}\nDouble tap: exit`;
+    if (this.calibrationStep >= 0) text = `Calibrate ${this.calibrationStep + 1}/3\n${[
+      'Face forward · hold · tap', 'Tilt right ear to shoulder · hold · tap', 'Return center, lift chin · hold · tap',
+    ][this.calibrationStep]}`;
     if (this.menuIndex >= 0) text = `Menu ${this.menuIndex + 1}/${this.menu.length} · swipe to choose\n> ${this.menu[this.menuIndex]}\nTap: select · double tap: exit`;
     if (this.viewing) text = `${this.viewing.title}\nSwipe: other drawings · tap: back\nDouble tap: exit`;
-    if (this.message) text = this.message + '\n' + text;
+    if (this.message && this.drawing.paused) text = this.message + '\n' + text;
     return {text, pixels:this.viewing ? decodePixels(this.viewing.pixels) : this.drawing.pixels,
       cursor:this.viewing || this.menuIndex >= 0 || this.calibrationStep >= 0 ? undefined : this.drawing.cursor};
   }

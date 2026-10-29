@@ -2,7 +2,7 @@
 
 A local sketchbook for Even G2. Move your head to move the cursor. Exposure accumulates: repeated passes and slow movement brighten a mark; fast travel leaves a fainter line. Tap once to pause or resume. Drawings and sensitivity stay on your phone inside the normal Even Realities app. No separate phone app, backend, API keys, or public store listing are required.
 
-**Status:** hardware-test build, not a verified hardware release. The official SDK supplies IMU samples, but does not document their physical axes or units. HeadStroke learns two directions from a three-position calibration. Whether turning your head is observable, how much tilt is needed, and display latency must be checked on your G2. If turning is not detected, try a small sideways tilt. It does not claim absolute yaw tracking.
+**Status:** hardware-test build, not a verified hardware release. The official SDK supplies IMU samples, but does not document their physical axes or units. HeadStroke learns two directions from a three-position calibration. Calibrate with a rightward **tilt** and an upward **pitch**; turning your face sideways may not change the sensor data. It does not claim absolute yaw tracking or a cursor fixed to the room.
 
 ## Development with Nix
 
@@ -45,8 +45,14 @@ The flake supports x86_64-linux and aarch64-linux; x86_64 is the tested target. 
    ```
 
 6. On your phone, open **Even Hub → developer section at the top right → Scan QR** (also called Prototype Mode/Dev Preview in some versions). Scan the terminal QR **inside the Even app**, not with the general camera app.
-7. HeadStroke should appear on the glasses and in the phone's embedded app view. It starts paused with guided calibration. Hold each position for about a second, then single-tap: **straight ahead → comfortably right → return toward center and look up**. A small rightward tilt can substitute if head turning is not visible to the sensor. Return to your forward-facing position, then tap to draw.
-8. Try a short stroke, pause, reposition, resume, retrace it, then save and reopen it. Start at sensitivity **1.0×**, adjusting to comfort.
+7. HeadStroke should appear on the glasses and in the phone's embedded app view. It starts paused with guided calibration. For each position, hold still for a moment and single-tap the glasses or press **Capture position** on the phone:
+
+   - **1/3 — center:** face straight ahead in your normal drawing posture.
+   - **2/3 — right:** keep your face pointed forward and tilt your **right ear toward your right shoulder**. Do not turn your face to look right.
+   - **3/3 — up:** return fully to the first position, then **lift your chin** to look upward without tilting sideways.
+
+   A weak or similar movement is rejected so the cursor does not learn a misleading direction. The phone shows live sensor readings and movement during calibration. If a step fails, hold the correct pose and tap again. The **Redo head calibration** button on the phone restarts it.
+8. Return to the center pose. While still paused, move your head to check that a right tilt moves the cursor right and looking up moves it up. Swipe up to recenter; then tap to draw. Start at sensitivity **1.0×**, adjusting to comfort. Try a short stroke, pause, reposition, resume, retrace it, then save and reopen it. Drawing mode shows only the canvas and cursor on the glasses.
 
 **Keep the phone awake and the Even app foregrounded during QR testing.** Local Testing is a live connection to your computer, not a permanent install. Locking the phone or switching apps can suspend it. Close HeadStroke and re-scan the QR after that, or after a code change. Your computer must keep running the dev server. Browser preview is only a mouse/touch test; opening the URL in Safari/Chrome does not connect it to the glasses.
 

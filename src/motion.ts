@@ -8,11 +8,11 @@ export function sampleVector(data: {x?: number; y?: number; z?: number}): Vector
   const vector: Vector = [data.x ?? 0, data.y ?? 0, data.z ?? 0];
   return vector.every(Number.isFinite) ? vector : undefined;
 }
-export function calibrationFrom(center: Vector, right: Vector, up: Vector): Calibration {
+export function calibrationFrom(center: Vector, right: Vector, up: Vector, minimumSeparation = .08): Calibration {
   const result = {right: subtract(right, center), up: subtract(up, center)};
   const rr = dot(result.right, result.right), uu = dot(result.up, result.up), ru = dot(result.right, result.up);
-  if (rr < 1e-8 || uu < 1e-8 || 1 - ru * ru / (rr * uu) < .08)
-    throw new Error('Movements were too small or too similar. Retry; tilt right if turning is not detected.');
+  if (rr < 1e-8 || uu < 1e-8 || 1 - ru * ru / (rr * uu) < minimumSeparation)
+    throw new Error('Right tilt and upward pitch must be clearly different movements.');
   return result;
 }
 /** Learns a local two-dimensional basis; deliberately does not invent yaw units. */

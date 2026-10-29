@@ -41,6 +41,7 @@ describe('motion calibration',()=>{
   it('rejects absent motion, collinear movements and nonfinite samples',()=>{
     expect(()=>calibrationFrom([0,0,0],[0,0,0],[1,0,0])).toThrow();
     expect(()=>calibrationFrom([0,0,0],[1,0,0],[2,0,0])).toThrow();
+    expect(()=>calibrationFrom([0,0,1],[1,0,1],[1,.3,1],.35)).toThrow();
     expect(sampleVector({x:Infinity})).toBeUndefined();expect(sampleVector({})).toEqual([0,0,0]);
   });
 });

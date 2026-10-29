@@ -64,7 +64,7 @@ export class Glasses implements GlassesPort {
         new TextContainerProperty({containerID: 2, containerName: 'status', xPosition: 16, yPosition: 152,
           width: 544, height: 136, content: 'Loading sketchbook...', isEventCapture: 0, zOrderIndex: 1}),
         new TextContainerProperty({containerID: 4, containerName: 'title', xPosition: 16, yPosition: 0,
-          width: 544, height: 36, content: 'HeadStroke', isEventCapture: 0, zOrderIndex: 2}),
+          width: 544, height: 36, content: ' ', isEventCapture: 0, zOrderIndex: 2}),
       ],
       imageObject: [new ImageContainerProperty({containerID: 3, containerName: 'drawing',
         xPosition: (576 - WIDTH) / 2, yPosition: 42, width: WIDTH, height: HEIGHT, zOrderIndex: 3})],

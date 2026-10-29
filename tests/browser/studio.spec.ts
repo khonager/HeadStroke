@@ -5,6 +5,8 @@ test('mobile sketchbook draws, saves, persists, views and deletes',async({page})
   await page.getByRole('button',{name:'Try browser preview'}).click();
   await expect(page.locator('#state')).toHaveText('Paused');
   await page.getByRole('button',{name:'Start drawing',exact:true}).click();
+  await expect(page.locator('#state')).toHaveText('Drawing');
+  await page.locator('#canvas').scrollIntoViewIfNeeded();
   const box=(await page.locator('#canvas').boundingBox())!;
   await page.mouse.move(box.x+40,box.y+50);await page.mouse.down();
   for(let i=0;i<20;i++){await page.mouse.move(box.x+40+i*10,box.y+50+Math.sin(i/3)*20);await page.waitForTimeout(35);}

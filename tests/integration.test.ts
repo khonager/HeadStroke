@@ -46,6 +46,8 @@ it('invalid stored data blocks overwriting the sketchbook',async()=>{
 it('serializes old and new snapshots, rejecting corrupt dimensions',async()=>{
   const m=mock(),repo=new Repository(m.port);const base:Snapshot={version:1,sensitivity:1,draft:new Drawing().encode(),artworks:[]};
   await Promise.all([repo.save(base),repo.save({...base,sensitivity:2})]);expect((await repo.load())!.sensitivity).toBe(2);
+  // A previously saved, weak calibration must remain loadable so it can be redone.
+  expect(parseSnapshot(JSON.stringify({...base,calibration:{right:[1,0,0],up:[1,.3,0]}})).calibration).toBeDefined();
   expect(()=>parseSnapshot(JSON.stringify({...base,draft:'AA=='}))).toThrow();
 });
 it('real-mode calibration, taps, menu, stale stream and system exit work',async()=>{
@@ -55,6 +57,7 @@ it('real-mode calibration, taps, menu, stale stream and system exit work',async(
   for(const v of [[0,0,1],[1,0,1],[0,1,1]] as [number,number,number][]){await pose(v);s.captureCalibration();}
   expect(s.calibrationStep).toBe(-1);await pose([0,0,1]);m.emit({textEvent:{}} as EvenHubEvent);
   await vi.advanceTimersByTimeAsync(0);expect(s.drawing.paused).toBe(false);
+  expect(s.frame().text).toBe(' ');
   await pose([.3,.2,1]);expect(s.drawing.hasMarks).toBe(true);
   m.emit({sysEvent:{eventType:E.SCROLL_BOTTOM_EVENT}} as EvenHubEvent);await vi.advanceTimersByTimeAsync(0);
   expect(s.menuIndex).toBe(0);expect(s.drawing.paused).toBe(true);
@@ -72,4 +75,15 @@ it('calibration accepts sparse but recent G2 samples and rejects a stopped strea
   expect(()=>s.captureCalibration()).toThrow('No recent head-tracking sample');
   expect(m.port.imu).toHaveBeenCalledTimes(2);
   s.sample([0,.5,1]);s.captureCalibration();expect(s.calibrationStep).toBe(-1);
+});
+it('calibration rejects an unhelpfully small tilt without losing the current step',async()=>{
+  vi.useFakeTimers();vi.setSystemTime(100000);
+  const m=mock(),s=new Studio(m.port,false,()=>{},m.port);studios.push(s);await s.start();
+  s.sample([0,0,1]);s.captureCalibration();
+  s.sample([.01,0,1]);
+  expect(()=>s.captureCalibration()).toThrow('Tilt your right ear farther');
+  expect(s.calibrationStep).toBe(1);
+  s.sample([.2,0,1]);
+  await vi.advanceTimersByTimeAsync(1200);
+  s.sample([.2,0,1]);s.captureCalibration();expect(s.calibrationStep).toBe(2);
 });
