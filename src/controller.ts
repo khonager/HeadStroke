@@ -110,9 +110,23 @@ export class Studio {
       'Turn or tilt comfortably right. Hold, then tap.',
       'Return to center, look up. Hold, then tap.'][this.calibrationStep] ?? '';
   }
+  get calibrationSensorStatus() {
+    if (!this.lastSample || !this.latest) return 'No head-tracking samples yet.';
+    const age = Math.max(0, (Date.now() - this.lastSample) / 1000);
+    const delta = this.captures[0]
+      ? Math.hypot(...this.latest.map((value, i) => value - this.captures[0][i]))
+      : undefined;
+    return `Sensor: ${this.samples.length} new sample${this.samples.length === 1 ? '' : 's'} · last ${age.toFixed(1)}s ago` +
+      (delta === undefined ? '' : ` · movement ${delta.toFixed(3)}`);
+  }
   captureCalibration() {
-    const recent = this.samples.filter(s => Date.now() - s.t < 700);
-    if (recent.length < 3 || Date.now() - this.lastSample > 500) throw new Error('Hold still and wait for a few head-tracking samples, then tap.');
+    // The bridge may deliver IMU reports sparsely. One recent reading is enough
+    // to capture a pose; requiring several inside 700 ms stranded real hardware.
+    const recent = this.samples.filter(s => Date.now() - s.t < 1200);
+    if (!recent.length || Date.now() - this.lastSample > 1500) {
+      void this.glasses?.imu(true).catch(e => this.fail(e));
+      throw new Error('No recent head-tracking sample. Move your head, wait for Sensor to update, then tap again.');
+    }
     const mean = [0,1,2].map(i => recent.reduce((sum,s) => sum + s.v[i],0)/recent.length) as Vector;
     const noise = Math.max(...recent.map(s => Math.hypot(...s.v.map((v,i) => v - mean[i]))));
     if (this.calibrationStep > 0) {
@@ -134,7 +148,7 @@ export class Studio {
     const gap = time - this.lastSample;
     if (gap > 1500 && this.lastSample) { this.drawing.setPaused(true); this.motion.recenter(vector); }
     this.lastSample = time; this.latest = vector;
-    this.samples.push({v:vector,t:time}); this.samples = this.samples.filter(s => time - s.t < 700);
+    this.samples.push({v:vector,t:time}); this.samples = this.samples.filter(s => time - s.t < 1200);
     this.connection = 'Even G2 · head tracking active';
     if (this.calibrationStep < 0 && this.menuIndex < 0 && !this.viewing && this.galleryIndex < 0) {
       const point = this.motion.project(vector);

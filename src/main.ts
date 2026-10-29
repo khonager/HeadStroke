@@ -11,7 +11,7 @@ app.innerHTML = `
 <canvas id="canvas" width="200" height="100" aria-label="Drawing preview"></canvas>
 <p id="state" class="state">Paused</p>
 <div id="notice" role="status" aria-live="polite" hidden></div>
-<section id="calibration" hidden aria-label="Head movement calibration"><h2>Set up head movement</h2><p id="instruction"></p><button id="capture">Capture position</button><p class="hint">Use small, comfortable movements. You can also tap on your glasses.</p></section>
+<section id="calibration" hidden aria-label="Head movement calibration"><h2>Set up head movement</h2><p id="instruction"></p><p id="calibration-sensor" class="hint" role="status"></p><button id="capture">Capture position</button><p class="hint">Use small, comfortable movements. You can also tap on your glasses.</p></section>
 <div class="controls"><button id="toggle" class="primary" disabled>Start drawing</button><button id="recenter" disabled>Recenter</button></div>
 <div class="controls secondary"><button id="save" disabled>Save drawing</button><button id="new" disabled>New canvas</button></div>
 <section class="settings"><label for="sensitivity">Sensitivity <output id="sensitivity-value">1.0×</output></label><input id="sensitivity" type="range" min="0.25" max="3" step="0.05" value="1" disabled><p class="hint">Tap once to pause. Move slowly to shade.</p><details id="help"><summary>Controls & calibration</summary><p>On glasses: tap to pause or resume, swipe up to recenter, swipe down for the menu. Double tap opens the system exit dialog.</p><p>Recenter and sensitivity changes pause drawing. New canvas saves your current marks first.</p><button id="calibrate" disabled>Calibrate head movement</button><p>Drawings stay on this phone in the Even app. Removing app data can erase them. No account or extra app needed.</p><a href="./privacy.html">Privacy</a></details></section>
@@ -35,6 +35,7 @@ function render() {
   el('connection').textContent = s.connection;
   el('calibration').hidden = s.calibrationStep < 0;
   el('instruction').textContent = `${s.calibrationStep+1}/3 · ${s.calibrationPrompt}`;
+  el('calibration-sensor').textContent = s.calibrationSensorStatus;
   const toggle = el<HTMLButtonElement>('toggle');
   toggle.textContent = s.viewing ? 'Back to drawing' : s.calibrationStep >= 0 ? 'Capture position' : s.drawing.paused ? 'Start drawing' : 'Pause drawing';
   for (const id of ['toggle','recenter','save','new','sensitivity','calibrate','capture'])

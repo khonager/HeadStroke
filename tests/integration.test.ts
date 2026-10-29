@@ -61,3 +61,15 @@ it('real-mode calibration, taps, menu, stale stream and system exit work',async(
   m.emit({sysEvent:{eventType:E.DOUBLE_CLICK_EVENT}} as EvenHubEvent);await vi.advanceTimersByTimeAsync(0);expect(m.port.exit).toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(3500);expect(s.drawing.paused).toBe(true);expect(s.connection).toContain('interrupted');
 });
+it('calibration accepts sparse but recent G2 samples and rejects a stopped stream',async()=>{
+  vi.useFakeTimers();vi.setSystemTime(100000);
+  const m=mock(),s=new Studio(m.port,false,()=>{},m.port);studios.push(s);await s.start();
+  s.sample([0,0,1]);s.captureCalibration();expect(s.calibrationStep).toBe(1);
+  s.sample([.5,0,1]);await vi.advanceTimersByTimeAsync(800);
+  expect(s.calibrationSensorStatus).toContain('1 new sample');
+  s.captureCalibration();expect(s.calibrationStep).toBe(2);
+  await vi.advanceTimersByTimeAsync(1600);
+  expect(()=>s.captureCalibration()).toThrow('No recent head-tracking sample');
+  expect(m.port.imu).toHaveBeenCalledTimes(2);
+  s.sample([0,.5,1]);s.captureCalibration();expect(s.calibrationStep).toBe(-1);
+});
