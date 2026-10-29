@@ -22,8 +22,16 @@ The flake supports x86_64-linux and aarch64-linux; x86_64 is the tested target. 
 
 1. Update the normal **Even Realities** phone app (SDK 0.0.16 requires app 2.2.10 or later) and G2 firmware. Pair the glasses normally. The R1 ring is optional; temple taps work.
 2. Sign in at [Even Hub](https://hub.evenrealities.com/login) with **the same account as on your phone**. This enables the developer section; no app submission is involved. Force-quit and reopen the phone app.
-3. Put the computer and phone on the same reachable Wi-Fi network. Keep `npm run dev` running from the first terminal.
-4. In a second terminal in this directory, run:
+3. Put the computer and phone on the same reachable Wi-Fi network. Keep `npm run dev` running from the first terminal. On NixOS, open the dev-server port in the active firewall:
+
+   ```sh
+   sudo nixos-firewall-tool open tcp 5173
+   ```
+
+   This is a temporary firewall rule; it does not change your NixOS configuration or install a package. The project flake cannot open a system firewall port. After testing, `sudo nixos-firewall-tool reset` restores your configured rules (including removal of other temporary rules made with that tool).
+
+4. **Before scanning**, open `http://YOUR_COMPUTER_LAN_IP:5173/` in your phone's ordinary browser. For the laptop used during development, the Wi-Fi address was `192.168.178.45`, so try `http://192.168.178.45:5173/` if that is still the address shown in Vite's `Network:` line. If the page does not load on the phone, the QR flow will not load either. Check that the dev server is still running, the Wi-Fi address is current, the firewall rule is open, and the router does not isolate Wi-Fi clients.
+5. In a second terminal in this directory, run:
 
    ```sh
    nix develop
@@ -36,16 +44,15 @@ The flake supports x86_64-linux and aarch64-linux; x86_64 is the tested target. 
    npx evenhub qr --url http://192.168.1.50:5173
    ```
 
-5. On your phone, open **Even Hub → developer section at the top right → Scan QR** (also called Prototype Mode/Dev Preview in some versions). Scan the terminal QR **inside the Even app**, not with the general camera app.
-6. HeadStroke should appear on the glasses and in the phone's embedded app view. It starts paused with guided calibration. Hold each position for about a second, then single-tap: **straight ahead → comfortably right → return toward center and look up**. A small rightward tilt can substitute if head turning is not visible to the sensor. Return to your forward-facing position, then tap to draw.
-7. Try a short stroke, pause, reposition, resume, retrace it, then save and reopen it. Start at sensitivity **1.0×**, adjusting to comfort.
+6. On your phone, open **Even Hub → developer section at the top right → Scan QR** (also called Prototype Mode/Dev Preview in some versions). Scan the terminal QR **inside the Even app**, not with the general camera app.
+7. HeadStroke should appear on the glasses and in the phone's embedded app view. It starts paused with guided calibration. Hold each position for about a second, then single-tap: **straight ahead → comfortably right → return toward center and look up**. A small rightward tilt can substitute if head turning is not visible to the sensor. Return to your forward-facing position, then tap to draw.
+8. Try a short stroke, pause, reposition, resume, retrace it, then save and reopen it. Start at sensitivity **1.0×**, adjusting to comfort.
 
 **Keep the phone awake and the Even app foregrounded during QR testing.** Local Testing is a live connection to your computer, not a permanent install. Locking the phone or switching apps can suspend it. Close HeadStroke and re-scan the QR after that, or after a code change. Your computer must keep running the dev server. Browser preview is only a mouse/touch test; opening the URL in Safari/Chrome does not connect it to the glasses.
 
 If the QR does not load:
 
-- Open `http://YOUR_COMPUTER_LAN_IP:5173` in the phone's browser just to check network reachability. If it cannot open, check the address, Wi-Fi client isolation and the computer firewall. The flake deliberately does not modify your firewall; TCP port 5173 must be reachable during the test.
-- On NixOS, if the firewall is the problem, you can temporarily allow the test port without editing your system configuration: `sudo nixos-firewall-tool open tcp 5173`. After testing, `sudo nixos-firewall-tool reset` restores the configured firewall rules (and removes any other temporary rules made with that tool). These commands are optional; HeadStroke does not run them automatically.
+- Open `http://YOUR_COMPUTER_LAN_IP:5173/` in the phone's browser to check reachability. If it cannot open, revisit step 3's firewall rule and check the Wi-Fi address and client isolation.
 - A phone hotspot is another option if Wi-Fi clients cannot talk to one another.
 - If the browser page loads but the glasses do not, return to the **Even app's scanner**, check that G2 is connected, and re-scan. If the embedded view offers “Try browser preview,” the native host bridge was not detected; preview does not replace the glasses connection.
 - A rejected calibration is not a successful motion test. Hold still longer, make two distinct small movements, and retry. If it still fails, note the app/firmware version and exact on-screen message.
